@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <style>
+        body {
+            width: 100%;
+            overflow: hidden;
+            background: #009688;
+        }
+        
+        ul {
+            position: absolute;
+            width: 500px;
+            text-align: center;
+            top: 150px;
+            left: 458px;
+        }
+
+        li {
+            display: block;
+            float: left;    
+            padding: 25px 20px;
+            margin-right: 5px;
+            margin-left: 5px;
+            float: left;
+            text-align: center;
+            cursor: move;
+            background: #e0f2f1;
+            font-family: 16px 'Roboto', sans-serif;
+            color: #009688;
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+
+    </style>
+</head>
+<body>
+    <ul id="list" class="droppable">
+        <li id="item" class="draggable">ONE</li>
+        <li id="item" class="draggable">TWO</li>
+        <li id="item" class="draggable">THREE</li>
+        <li id="item" class="draggable">FOUR</li>
+        <li id="item" class="draggable">FIVE</li>
+    </ul>
+    <script>
+        function getCoords(elem) {
+          var coords = elem.getBoundingClientRect();
+
+          return {
+            top: coords.top + pageYOffset,
+            left: coords.left + pageXOffset
+          };
+        }
+        var DragManager = new function() {
+
+          var dragObject = {};
+
+          var self = this; // для доступа к себе из обработчиков
+
+          function onMouseDown(e) { 
+
+              if(e.which != 1) return;
+
+              var elem = e.target.closest('.draggable');
+
+              if(!elem) return;
+
+              dragObject.elem = elem;
+
+              dragObject.coordX = e.pageX;
+              dragObject.coordY = e.pageY;
+              return false;
+          };
+            
+          function onMouseMove(e) {
+
+              if (!dragObject.elem) return;
+
+              if(!dragObject.avatar) {
+
+              var moveX = e.pageX - dragObject.coordX;
+              var moveY = e.pageY - dragObject.coordY;
+
+              if(Math.abs(moveX) < 3 && Math.abs(moveY) < 3){  return;
+              }
+
+              dragObject.avatar = createAvatar (e);
+              if(!dragObject.avatar) {
+                dragObject = {};
+                return;
+              }
+
+              var coords = getCoords(dragObject.avatar); 
+                dragObject.shiftX = dragObject.coordX - coords.left;
+                dragObject.shiftY = dragObject.coordY - coords.top;
+
+                startDrag(e);
+              }
+                dragObject.avatar.style.left = e.pageX - dragObject.shiftX + 'px';
+                dragObject.avatar.style.top = e.pageY - dragObject.shiftY + 'px';
+                return false;
+          };
+        
+          function createAvatar(e) {
+              var avatar = dragObject.elem;
+              var old = {
+                parent: avatar.parentNode,
+                nextSibling: avatar.nextSibling,
+                position: avatar.position || '',
+                left: avatar.left || '',
+                top: avatar.top || '',
+                zIndex: avatar.zIndex || ''
+              };
+
+              avatar.rollback = function() {
+                old.parent.insertBefore(avatar, old.nextSibling);
+                avatar.style.position = old.position;
+                avatar.style.left = old.left;
+                avatar.style.top = old.top;
+                avatar.style.zIndex = old.zIndex;
+              };
+
+              return avatar;
+          };
+            
+          function startDrag(e) {
+              var avatar = dragObject.avatar;
+
+              document.body.appendChild(avatar);
+              avatar.style.position = 'absolute';
+              avatar.style.zIndex = '9999';
+          };
+            
+          function finishDrag(e) {
+              var dropElem = findDroppable(e);
+              if(!dropElem) {
+                self.onDragCancel(dragObject);
+              }
+              else {
+                self.onDragEnd(dragObject, dropElem);
+                }
+          };
+        
+          function findDroppable(e) {
+              dragObject.avatar.hidden = true;
+
+              var elem = document.elementFromPoint(e.clientX, e.clientY);
+              dragObject.avatar.hidden = false;
+
+              if(elem === null) {
+                return null;
+              }
+              return elem.closest('.droppable');
+          };
+
+          function onMouseUp(e) { 
+              if(dragObject.avatar) {
+                finishDrag(e);
+              }
+              dragObject = {};
+          }
+
+          document.onmousedown = onMouseDown;
+          document.onmousemove = onMouseMove;
+          document.onmouseup = onMouseUp;
+
+          function onDragEnd (dragObject, dropElem) { };
+          function onDragCancel (dragObject) {};
+        }
+                
+    </script> 
+</body>
+</html>
